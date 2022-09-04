@@ -81,12 +81,13 @@ def load_checkpoint(model, weights):
         # model.load_state_dict(checkpoint["state_dict"])
         raise ValueError("")
     except Exception as e:
-        state_dict = checkpoint["state_dict"]
-        new_state_dict = OrderedDict()
-        for k, v in state_dict.items():
-            name = k[7:] if 'module.' in k else k
-            new_state_dict[name] = v
-        model.load_state_dict(new_state_dict)
+        # print(list(checkpoint.keys())
+        # state_dict = checkpoint["state_dict"]
+        # new_state_dict = OrderedDict()
+        # for k, v in state_dict.items():
+        #     name = k[7:] if 'module.' in k else k
+        #     new_state_dict[name] = v
+        model.load_state_dict(checkpoint['params'])
 
 def load_checkpoint_multigpu(model, weights):
     checkpoint = th.load(weights)

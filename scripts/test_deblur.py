@@ -50,35 +50,9 @@ def run_exp(cfg):
     results.timer_flow = []
     results.timer_deno = []
 
-    # # -- network --
-    # noise_version = "blur"
-    # if cfg.model_type == "original":
-    #     model = restormer.original.load_model(noise_version=noise_version).to(cfg.device)
-    # elif cfg.model_type == "aug_refactored":
-    #     attn_mode = "window_refactored"
-    #     model = restormer.augmented.load_model(noise_version=noise_version,
-    #                                          attn_mode=attn_mode,
-    #                                          stride=cfg.stride,sb=-1)
-    #                                          # ws=cfg.ws,wt=cfg.wt)#*1024)
-    # elif cfg.model_type == "aug_dnls":
-    #     attn_mode = "window_dnls"
-    #     model = restormer.augmented.load_model(noise_version=noise_version,
-    #                                          attn_mode=attn_mode,
-    #                                          stride=cfg.stride)
-    #                                          # ws=cfg.ws,wt=cfg.wt)
-    # elif cfg.model_type == "product_dnls":
-    #     attn_mode = "product_dnls"
-    #     model = restormer.augmented.load_model(noise_version=noise_version,
-    #                                          attn_mode=attn_mode,
-    #                                          stride=cfg.stride)
-    #                                          # ws=cfg.ws,wt=cfg.wt)
-    # else:
-    #     raise ValueError(f"Uknown model_type [{cfg.model_type}]")
-    # model.eval()
-
     # -- load model --
     model_cfg = restormer.extract_search(cfg)
-    model = restormer.load_model(model_cfg)
+    model = restormer.load_model(model_cfg).to(cfg.device)
     load_checkpoint(model,cfg.use_train,cfg.model_type)
     imax = 255.
 
@@ -112,7 +86,7 @@ def run_exp(cfg):
         print("[%d] noisy.shape: " % index,noisy.shape)
 
         # -- create timer --
-        timer = uformer.utils.timer.ExpTimer()
+        timer = restormer.utils.timer.ExpTimer()
 
         # -- optical flow --
         timer.start("flow")
@@ -154,13 +128,13 @@ def run_exp(cfg):
 
         # -- save example --
         out_dir = Path(cfg.saved_dir) / cfg.dname / cfg.model_type / cfg.vid_name
-        deno_fns = uformer.utils.io.save_burst(deno,out_dir,"deno",
+        deno_fns = restormer.utils.io.save_burst(deno,out_dir,"deno",
                                                fstart=fstart,div=1.,fmt="np")
-        deno_fns = uformer.utils.io.save_burst(deno,out_dir,"deno",
+        deno_fns = restormer.utils.io.save_burst(deno,out_dir,"deno",
                                                fstart=fstart,div=1.,fmt="png")
-        # uformer.utils.io.save_burst(clean,out_dir,"clean",
+        # restormer.utils.io.save_burst(clean,out_dir,"clean",
         #                             fstart=fstart,div=1.,fmt="np")
-        # uformer.utils.io.save_burst(noisy,out_dir,"noisy",
+        # restormer.utils.io.save_burst(noisy,out_dir,"noisy",
         #                             fstart=fstart,div=1.,fmt="np")
 
         # -- psnr --
@@ -191,9 +165,10 @@ def load_checkpoint(model,use_train,model_type):
     if load:
         print("loading!")
         # mpath = croot / "993b7b7f-0cbd-48ac-b92a-0dddc3b4ce0e-epoch=38.ckpt"
-        mpath = croot / "067f3bb0-5f50-423a-a02f-6ef6bdaf0336-epoch=05.ckpt"
-        state = th.load(str(mpath))['state_dict']
-        lightning.remove_lightning_load_state(state)
+        # mpath = croot / "067f3bb0-5f50-423a-a02f-6ef6bdaf0336-epoch=05.ckpt"
+        mpath = "weights/motion_deblurring.pth"
+        state = th.load(str(mpath))['params']#['state_dict']
+        # lightning.remove_lightning_load_state(state)
         model.load_state_dict(state)
 
 def default_cfg():
@@ -234,7 +209,7 @@ def main():
 
     flow = ["false"]
     ws,wt = [8],[0]
-    isizes = ["none"]
+    isizes = ["512_512"]
     stride = [1]
     use_train = ["false"]
     model_type = ["aug_refactored","aug_dnls","product_dnls"]
